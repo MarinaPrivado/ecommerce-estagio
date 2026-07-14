@@ -45,7 +45,7 @@ async function entrarComo(role: 'client' | 'admin') {
         <div class="form-grid">
           <label class="form-field full">
             E-mail
-            <input v-model="email" type="email" placeholder="seuemail@exemplo.com" />
+            <input v-model="email" type="email" placeholder="seuemail@gmail.com" />
           </label>
           <label class="form-field full">
             Senha

@@ -230,6 +230,29 @@ A base da URL é `http://localhost:8081/api`.
 | `PUT` | `/api/clients/{id}` | Atualiza um cliente existente |
 | `DELETE` | `/api/clients/{id}` | Remove um cliente |
 
+### Pedidos
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/orders` | Lista todos os pedidos (inclui cliente) |
+| `GET` | `/api/orders/{id}` | Retorna um pedido pelo ID |
+| `POST` | `/api/orders` | Cadastra um novo pedido |
+| `PUT` | `/api/orders/{id}` | Atualiza um pedido existente |
+| `DELETE` | `/api/orders/{id}` | Remove um pedido |
+
+### Exemplo de corpo para `POST /api/orders`
+
+```json
+{
+  "client_id": 1,
+  "total": 7299.60,
+  "status": "Pendente",
+  "items": "[{\"product_id\":1,\"name\":\"Notebook Aurora X14\",\"price\":4599.90,\"quantity\":1},{\"product_id\":2,\"name\":\"Smartphone Pulse 5G\",\"price\":2199.90,\"quantity\":1}]"
+}
+```
+
+> O campo `items` deve ser uma string JSON contendo um array de objetos com `product_id`, `name`, `price` e `quantity`.
+
 ### Exemplo de corpo para `POST /api/products`
 
 ```json
@@ -266,6 +289,17 @@ As tabelas são criadas pelo Laravel via migrations, que ficam em `backend/datab
 | `badge` | `VARCHAR(40)` | Etiqueta (ex: "Oferta", "Novo") |
 | `icon` | `VARCHAR(80)` | Ícone PrimeIcons |
 | `description` | `TEXT` | Descrição do produto |
+| `created_at` / `updated_at` | `TIMESTAMP` | Gerenciados pelo Laravel |
+
+### Tabela `orders`
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | `BIGINT` | Chave primária |
+| `client_id` | `BIGINT` | FK para `clients.id` |
+| `total` | `DECIMAL(10,2)` | Valor total do pedido |
+| `status` | `ENUM` | `Pendente`, `Pago`, `Enviado`, `Entregue` ou `Cancelado` |
+| `items` | `JSON` | Array de itens (produto, quantidade, preço) |
 | `created_at` / `updated_at` | `TIMESTAMP` | Gerenciados pelo Laravel |
 
 ### Tabela `clients`

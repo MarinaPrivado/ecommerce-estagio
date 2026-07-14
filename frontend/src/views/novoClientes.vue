@@ -1,55 +1,76 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { clients, type Client } from '@/data/catalog'
+import { getClients, createClient, updateClient, deleteClient } from '@/data/api'
+import type { Client } from '@/data/catalog'
 
-type ClientForm = Omit<Client, 'id'>
-
-const clientList = ref<Client[]>([...clients])
+const clientList = ref<Client[]>([])
 const editingId = ref<number | null>(null)
-const emptyForm = (): ClientForm => ({
+const form = reactive({
   name: '',
   email: '',
   phone: '',
-  status: 'Ativo',
+  status: 'Ativo' as 'Ativo' | 'Inativo',
   city: '',
+  document: '',
+  address: '',
 })
-const form = reactive<ClientForm>(emptyForm())
 
 const resetForm = () => {
-  Object.assign(form, emptyForm())
+  form.name = ''
+  form.email = ''
+  form.phone = ''
+  form.status = 'Ativo'
+  form.city = ''
+  form.document = ''
+  form.address = ''
   editingId.value = null
 }
 
-const saveClient = () => {
+const saveClient = async () => {
   if (!form.name || !form.email) return
 
-  if (editingId.value) {
-    clientList.value = clientList.value.map((client) =>
-      client.id === editingId.value ? { ...client, ...form } : client,
-    )
-  } else {
-    clientList.value.unshift({ ...form, id: Date.now() })
+  try {
+    if (editingId.value) {
+      await updateClient(editingId.value, { ...form })
+    } else {
+      await createClient({ ...form })
+    }
+    clientList.value = await getClients()
+    resetForm()
+  } catch {
+    alert('Erro ao salvar cliente.')
   }
-
-  resetForm()
 }
 
 const editClient = (client: Client) => {
   editingId.value = client.id
-  Object.assign(form, {
-    name: client.name,
-    email: client.email,
-    phone: client.phone,
-    status: client.status,
-    city: client.city,
-  })
+  form.name = client.name
+  form.email = client.email
+  form.phone = client.phone
+  form.status = client.status
+  form.city = client.city
+  form.document = client.document
+  form.address = client.address
 }
 
-const removeClient = (id: number) => {
-  clientList.value = clientList.value.filter((client) => client.id !== id)
-  if (editingId.value === id) resetForm()
+const removeClient = async (id: number) => {
+  try {
+    await deleteClient(id)
+    clientList.value = await getClients()
+    if (editingId.value === id) resetForm()
+  } catch {
+    alert('Erro ao remover cliente.')
+  }
 }
+
+onMounted(async () => {
+  try {
+    clientList.value = await getClients()
+  } catch {
+    // silent
+  }
+})
 </script>
 
 <template>

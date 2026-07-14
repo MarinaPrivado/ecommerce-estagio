@@ -1,13 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
-import { formatCurrency, products, type Product } from '@/data/catalog'
+import { ref, onMounted } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { formatCurrency } from '@/data/catalog'
+import { getProduct } from '@/data/api'
+import { addToCart } from '@/stores/cart'
+import type { Product } from '@/data/catalog'
 
 const route = useRoute()
-const fallbackProduct = products[0] as Product
-const product = computed<Product>(
-  () => products.find((item) => item.id === Number(route.params.id)) || fallbackProduct,
-)
+const router = useRouter()
+const product = ref<Product | null>(null)
+const error = ref(false)
+
+onMounted(async () => {
+  try {
+    product.value = await getProduct(Number(route.params.id))
+  } catch {
+    error.value = true
+  }
+})
+
+const handleAddToCart = () => {
+  if (!product.value) return
+  addToCart(product.value)
+  router.push('/carrinho')
+}
 </script>
 
 <template>
@@ -21,7 +37,8 @@ const product = computed<Product>(
     </section>
 
     <section class="page-section">
-      <article class="detail-card">
+      <p v-if="error" class="muted">Produto não encontrado.</p>
+      <article v-else-if="product" class="detail-card">
         <div class="detail-visual">
           <i class="pi" :class="product.icon"></i>
         </div>
@@ -49,13 +66,13 @@ const product = computed<Product>(
           <p><strong>Avaliacao:</strong> <span class="rating">{{ product.rating }} / 5</span></p>
 
           <div class="hero-actions">
-            <RouterLink class="primary-button" to="/carrinho">
+            <button class="primary-button" type="button" @click="handleAddToCart">
               <i class="pi pi-shopping-cart"></i>
               Adicionar ao carrinho
-            </RouterLink>
-           
+            </button>
           </div>
         </div>
       </article>
+      <p v-else class="muted">Carregando...</p>
     </section>
 </template>

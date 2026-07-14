@@ -1,79 +1,85 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { formatCurrency, products, clients, type Product, type Client } from '@/data/catalog'
+import { formatCurrency } from '@/data/catalog'
+import {
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getClients,
+  updateClient,
+  deleteClient,
+} from '@/data/api'
+import type { Product, Client } from '@/data/catalog'
 
-type ProductForm = Omit<Product, 'id' | 'rating' | 'specs'>
-
-const productList = ref<Product[]>([...products])
+const productList = ref<Product[]>([])
 const editingId = ref<number | null>(null)
-const emptyForm = (): ProductForm => ({
+const form = reactive({
   name: '',
   brand: '',
   category: 'Notebooks',
   price: 0,
-  oldPrice: undefined,
+  oldPrice: null as number | null,
   stock: 0,
   badge: '',
   icon: 'pi-box',
   description: '',
 })
-const form = reactive<ProductForm>(emptyForm())
 
 const resetForm = () => {
-  Object.assign(form, emptyForm())
+  form.name = ''
+  form.brand = ''
+  form.category = 'Notebooks'
+  form.price = 0
+  form.oldPrice = null
+  form.stock = 0
+  form.badge = ''
+  form.icon = 'pi-box'
+  form.description = ''
   editingId.value = null
 }
 
-const saveProduct = () => {
+const saveProduct = async () => {
   if (!form.name || !form.brand || !form.category) return
 
-  if (editingId.value) {
-    productList.value = productList.value.map((product) =>
-      product.id === editingId.value
-        ? {
-            ...product,
-            ...form,
-            price: Number(form.price),
-            stock: Number(form.stock),
-          }
-        : product,
-    )
-  } else {
-    productList.value.unshift({
-      ...form,
-      id: Date.now(),
-      price: Number(form.price),
-      stock: Number(form.stock),
-      rating: 5,
-      specs: ['Cadastro via CRUD', 'Pronto para API Laravel'],
-    })
+  try {
+    if (editingId.value) {
+      await updateProduct(editingId.value, form)
+    } else {
+      await createProduct(form)
+    }
+    productList.value = await getProducts()
+    resetForm()
+  } catch {
+    alert('Erro ao salvar produto.')
   }
-
-  resetForm()
 }
 
 const editProduct = (product: Product) => {
   editingId.value = product.id
-  Object.assign(form, {
-    name: product.name,
-    brand: product.brand,
-    category: product.category,
-    price: product.price,
-    oldPrice: product.oldPrice,
-    stock: product.stock,
-    badge: product.badge || '',
-    icon: product.icon,
-    description: product.description,
-  })
+  form.name = product.name
+  form.brand = product.brand
+  form.category = product.category
+  form.price = product.price
+  form.oldPrice = product.oldPrice ?? null
+  form.stock = product.stock
+  form.badge = product.badge || ''
+  form.icon = product.icon
+  form.description = product.description
 }
 
-const removeProduct = (id: number) => {
-  productList.value = productList.value.filter((product) => product.id !== id)
-  if (editingId.value === id) resetForm()
+const removeProduct = async (id: number) => {
+  try {
+    await deleteProduct(id)
+    productList.value = await getProducts()
+    if (editingId.value === id) resetForm()
+  } catch {
+    alert('Erro ao remover produto.')
+  }
 }
 
-const clientList = ref<Client[]>([...clients])
+const clientList = ref<Client[]>([])
 const editingClientId = ref<number | null>(null)
 const clientForm = reactive({
   name: '',
@@ -101,24 +107,42 @@ const editClient = (client: Client) => {
   clientForm.status = client.status
 }
 
-const saveClient = () => {
+const saveClient = async () => {
   if (!clientForm.name || !clientForm.email) return
 
-  if (editingClientId.value) {
-    clientList.value = clientList.value.map((c) =>
-      c.id === editingClientId.value
-        ? { ...c, ...clientForm }
-        : c,
-    )
+  try {
+    if (editingClientId.value) {
+      await updateClient(editingClientId.value, {
+        ...clientForm,
+        document: '',
+        address: '',
+      })
+    }
+    clientList.value = await getClients()
+    resetClientForm()
+  } catch {
+    alert('Erro ao salvar cliente.')
   }
-
-  resetClientForm()
 }
 
-const removeClient = (id: number) => {
-  clientList.value = clientList.value.filter((c) => c.id !== id)
-  if (editingClientId.value === id) resetClientForm()
+const removeClient = async (id: number) => {
+  try {
+    await deleteClient(id)
+    clientList.value = await getClients()
+    if (editingClientId.value === id) resetClientForm()
+  } catch {
+    alert('Erro ao remover cliente.')
+  }
 }
+
+onMounted(async () => {
+  try {
+    productList.value = await getProducts()
+    clientList.value = await getClients()
+  } catch {
+    // silent
+  }
+})
 </script>
 
 <template>

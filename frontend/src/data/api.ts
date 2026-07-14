@@ -202,3 +202,46 @@ export const deleteClient = (id: number) =>
   request<null>(`/clients/${id}`, {
     method: 'DELETE',
   })
+
+export type OrderItem = {
+  product_id?: number
+  name: string
+  price: number
+  quantity: number
+}
+
+export type Order = {
+  id: number
+  client_id: number
+  total: number
+  status: string
+  items: OrderItem[]
+  client?: Client
+  created_at?: string
+  updated_at?: string
+}
+
+export type OrderPayload = {
+  client_id: number
+  total: number
+  status: string
+  items: string
+}
+
+const mapOrder = (raw: any): Order => ({
+  ...raw,
+  items: typeof raw.items === 'string' ? JSON.parse(raw.items) : raw.items,
+})
+
+export const getOrders = async (): Promise<Order[]> => {
+  const orders = await request<any[]>('/orders')
+  return orders.map(mapOrder)
+}
+
+export const createOrder = async (order: OrderPayload): Promise<Order> => {
+  const created = await request<any>('/orders', {
+    method: 'POST',
+    body: JSON.stringify(order),
+  })
+  return mapOrder(created)
+}
